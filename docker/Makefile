@@ -1,4 +1,4 @@
-NAMESPACE ?= puppet
+NAMESPACE ?= odidev
 git_describe = $(shell git describe)
 vcs_ref := $(shell git rev-parse HEAD)
 build_date := $(shell date -u +%FT%T)
@@ -52,14 +52,10 @@ test: prep
 	@PUPPET_TEST_DOCKER_IMAGE=$(NAMESPACE)/puppet-agent-alpine:$(version) \
 		bundle exec --gemfile $$GEMFILE rspec spec
 
-publish: prep
-	@docker push $(NAMESPACE)/puppet-agent-ubuntu:$(version)
-	@docker push $(NAMESPACE)/puppet-agent:$(version)
-	@docker push $(NAMESPACE)/puppet-agent-alpine:$(version)
-ifeq ($(IS_LATEST),true)
-	@docker push $(NAMESPACE)/puppet-agent-ubuntu:$(LATEST_VERSION)
-	@docker push $(NAMESPACE)/puppet-agent:$(LATEST_VERSION)
-	@docker push $(NAMESPACE)/puppet-agent-alpine:$(LATEST_VERSION)
-endif
+publish: 
+	docker buildx build --platform linux/amd64,linux/arm64 -t $(NAMESPACE)/puppet-agent-ubuntu:$(LATEST_VERSION) --push puppet-agent-ubuntu
+	docker buildx build --platform linux/amd64,linux/arm64 -t $(NAMESPACE)/puppet-agent:$(LATEST_VERSION) --push puppet-agent-ubuntu
+	docker buildx build --platform linux/amd64,linux/arm64 -t $(NAMESPACE)/puppet-agent-alpine:$(LATEST_VERSION) -f puppet-agent-alpine/Dockerfile --push $(PWD)/..
+
 
 .PHONY: lint build test publish
